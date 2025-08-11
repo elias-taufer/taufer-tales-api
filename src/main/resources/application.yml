@@ -1,0 +1,24 @@
+server:
+  port: 8080
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/taufer_tales?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+  jackson:
+    serialization:
+      WRITE_DATES_AS_TIMESTAMPS: false
+
+app:
+  jwt:
+    # Base64-encoded secret for HS256 (dev value; replace in prod)
+    secret: ${APP_JWT_SECRET}
+    expiration-ms: 3600000
+  cors:
+    allowed-origins: http://localhost:4200
