@@ -5,13 +5,19 @@ import com.taufer.tales.domain.User;
 import com.taufer.tales.dto.*;
 import com.taufer.tales.repo.UserRepository;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.hibernate.validator.constraints.URL;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
@@ -39,3 +45,5 @@ public class AuthController {
         return ResponseEntity.ok(new AuthResponse(jwt.generate(u), u.getUsername()));
     }
 }
+
+
