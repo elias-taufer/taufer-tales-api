@@ -2,6 +2,7 @@ package com.taufer.tales.taleservice;
 
 import com.taufer.tales.dto.*;
 import com.taufer.tales.service.TaleService;
+import com.taufer.tales.common.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,9 +14,14 @@ import org.springframework.web.bind.annotation.*;
 public class TaleController {
     private final TaleService svc;
 
+
+
     @GetMapping
-    public Page<TaleResponse> list(@RequestParam(required = false) String q, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
-        return svc.list(q, page, size);
+    public PageResponse<TaleResponse> list(
+            @RequestParam(required = false) String q, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size
+    ) {
+        var result = svc.list(q, page, size);
+        return PageResponse.from(result);
     }
 
     @GetMapping("/{id}")
