@@ -5,7 +5,6 @@ import com.taufer.tales.service.TaleService;
 import com.taufer.tales.common.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

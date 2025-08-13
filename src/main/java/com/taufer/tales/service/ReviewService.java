@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +29,18 @@ public class ReviewService {
         return new ReviewResponse(r.getId(), t.getId(), u.getUsername(), r.getRating(), r.getTitle(), r.getBody(), r.getCreatedAt().toString());
     }
 
+    public Optional<ReviewResponse> read(Long reviewId) {
+        return reviews.findById(reviewId)
+                .map(r -> new ReviewResponse(
+                        r.getId(),
+                        r.getTale().getId(),
+                        r.getUser().getUsername(),
+                        r.getRating(),
+                        r.getTitle(),
+                        r.getBody(),
+                        r.getCreatedAt().toString()));
+    }
+
     public ReviewResponse update(Long id, ReviewUpdateDto d, Authentication auth) {
         Review r = reviews.findById(id).orElseThrow();
         if (!r.getUser().getUsername().equals(auth.getName())) throw new RuntimeException("forbidden");
@@ -41,5 +54,18 @@ public class ReviewService {
         Review r = reviews.findById(id).orElseThrow();
         if (!r.getUser().getUsername().equals(auth.getName())) throw new RuntimeException("forbidden");
         reviews.delete(r);
+    }
+
+    public Optional<ReviewResponse> findMyForTale(Long taleId, Authentication auth) {
+        Long uID = users.findByUsername(auth.getName()).orElseThrow().getId();  ;
+        return reviews.findByUserIdAndTaleId(uID, taleId)
+                .map(r -> new ReviewResponse(
+                        r.getId(),
+                        r.getTale().getId(),
+                        r.getUser().getUsername(),
+                        r.getRating(),
+                        r.getTitle(),
+                        r.getBody(),
+                        r.getCreatedAt().toString()));
     }
 }

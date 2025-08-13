@@ -1,9 +1,9 @@
 package com.taufer.tales.config;
 
-import com.taufer.tales.authgateway.JwtAuthFilter;
+import com.taufer.tales.authgateway.JwtAuthFilter;import lombok.RequiredArgsConstructor;
+
 import com.taufer.tales.error.RestAccessDeniedHandler;
 import com.taufer.tales.error.RestAuthenticationEntryPoint;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -52,24 +52,18 @@ public class SecurityConfig {
                                             RestAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // needs a CorsConfigurationSource bean (below)
+                .cors(Customizer.withDefaults()) // needs a CorsConfigurationSource bean
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(e -> e
-                        .authenticationEntryPoint(authEntryPoint)   // -> 401 JSON
-                        .accessDeniedHandler(accessDeniedHandler)   // -> 403 JSON
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(authEntryPoint) // -> 401 JSON
+                        .accessDeniedHandler(accessDeniedHandler) // -> 403 JSON
                 )
                 .authorizeHttpRequests(reg -> reg
-                        // public docs
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        // auth endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // CORS preflight (so browsers don't get 401 on OPTIONS)
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        // public read-only tales
                         .requestMatchers(HttpMethod.GET, "/api/tales/**").permitAll()
-                        // k8s/docker health if you expose actuator
                         .requestMatchers("/actuator/health/**").permitAll()
-                        // everything else requires auth
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authProvider())
