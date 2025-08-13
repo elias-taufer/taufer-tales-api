@@ -1,18 +1,19 @@
 package com.taufer.tales.commentstream;
 
 import com.taufer.tales.dto.*;
-import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
-@Slf4j
 @RequiredArgsConstructor
+@Validated
 public class CommentController {
     private final CommentService svc;
 
@@ -22,7 +23,7 @@ public class CommentController {
     }
 
     @PostMapping
-    public CommentResponse create(@RequestBody CommentCreateDto d, Authentication auth) {
+    public CommentResponse create(@RequestBody @Valid CommentCreateDto d, Authentication auth) {
         return svc.create(d, auth);
     }
 }

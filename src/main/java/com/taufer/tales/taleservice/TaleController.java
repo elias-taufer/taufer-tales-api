@@ -1,17 +1,18 @@
 package com.taufer.tales.taleservice;
 
 import com.taufer.tales.dto.*;
-import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.TaleService;
 import com.taufer.tales.common.PageResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/tales")
-@Slf4j
 @RequiredArgsConstructor
+@Validated
 public class TaleController {
     private final TaleService svc;
 
@@ -22,7 +23,7 @@ public class TaleController {
             @RequestParam(required = false) String q, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size
     ) {
         var result = svc.list(q, page, size);
-        return PageResponse.from(result);
+        return result;
     }
 
     @GetMapping("/{id}")
@@ -36,7 +37,7 @@ public class TaleController {
     }
 
     @PatchMapping("/{id}")
-    public TaleResponse update(@PathVariable Long id, @RequestBody TaleUpdateDto d) {
+    public TaleResponse update(@PathVariable Long id, @RequestBody @Valid TaleUpdateDto d) {
         return svc.update(id, d);
     }
 

@@ -1,20 +1,21 @@
 package com.taufer.tales.reviewforge;
 
 import com.taufer.tales.dto.*;
-import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/reviews")
-@Slf4j
 @RequiredArgsConstructor
+@Validated
 public class ReviewController {
     private final ReviewService svc;
 
@@ -31,12 +32,12 @@ public class ReviewController {
     }
 
     @PostMapping
-    public ReviewResponse create(@RequestBody ReviewCreateDto d, Authentication auth) {
+    public ReviewResponse create(@RequestBody @Valid ReviewCreateDto d, Authentication auth) {
         return svc.create(d, auth);
     }
 
     @PatchMapping("/{id}")
-    public ReviewResponse update(@PathVariable Long id, @RequestBody ReviewUpdateDto reviewUpdateDto, Authentication auth) {
+    public ReviewResponse update(@PathVariable Long id, @RequestBody @Valid ReviewUpdateDto reviewUpdateDto, Authentication auth) {
         return svc.update(id, reviewUpdateDto, auth);
     }
 
