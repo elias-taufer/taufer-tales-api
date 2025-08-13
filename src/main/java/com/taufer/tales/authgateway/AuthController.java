@@ -1,6 +1,7 @@
 package com.taufer.tales.authgateway;
 
 import com.taufer.tales.domain.Role;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.domain.User;
 import com.taufer.tales.dto.*;
 import com.taufer.tales.repo.UserRepository;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/api/auth")
+@Slf4j
 @RequiredArgsConstructor
 public class AuthController {
     private final UserRepository users;

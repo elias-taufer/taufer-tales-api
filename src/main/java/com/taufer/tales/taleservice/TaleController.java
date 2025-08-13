@@ -1,6 +1,7 @@
 package com.taufer.tales.taleservice;
 
 import com.taufer.tales.dto.*;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.TaleService;
 import com.taufer.tales.common.PageResponse;
 import jakarta.validation.Valid;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/tales")
+@Slf4j
 @RequiredArgsConstructor
 public class TaleController {
     private final TaleService svc;

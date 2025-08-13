@@ -1,6 +1,7 @@
 package com.taufer.tales.service;
 
 import com.taufer.tales.domain.*;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.dto.*;
 import com.taufer.tales.repo.*;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.*;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class CommentService {
     private final CommentRepository comments;

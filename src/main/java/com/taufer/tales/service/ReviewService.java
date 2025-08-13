@@ -1,6 +1,7 @@
 package com.taufer.tales.service;
 
 import com.taufer.tales.domain.*;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.dto.*;
 import com.taufer.tales.repo.*;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class ReviewService {
     private final ReviewRepository reviews;

@@ -1,6 +1,7 @@
 package com.taufer.tales.reviewforge;
 
 import com.taufer.tales.dto.*;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -12,6 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/reviews")
+@Slf4j
 @RequiredArgsConstructor
 public class ReviewController {
     private final ReviewService svc;

@@ -1,6 +1,7 @@
 package com.taufer.tales.service;
 
 import com.taufer.tales.domain.Tale;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.dto.*;
 import com.taufer.tales.repo.*;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class TaleService {
     private final TaleRepository tales;

@@ -1,6 +1,7 @@
 package com.taufer.tales.config;
 
-import com.taufer.tales.authgateway.JwtAuthFilter;import lombok.RequiredArgsConstructor;
+import com.taufer.tales.authgateway.JwtAuthFilter;
+import lombok.RequiredArgsConstructor;
 
 import com.taufer.tales.error.RestAccessDeniedHandler;
 import com.taufer.tales.error.RestAuthenticationEntryPoint;

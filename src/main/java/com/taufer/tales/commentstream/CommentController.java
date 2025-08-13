@@ -1,6 +1,7 @@
 package com.taufer.tales.commentstream;
 
 import com.taufer.tales.dto.*;
+import lombok.extern.slf4j.Slf4j;
 import com.taufer.tales.service.CommentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -10,6 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/comments")
+@Slf4j
 @RequiredArgsConstructor
 public class CommentController {
     private final CommentService svc;
