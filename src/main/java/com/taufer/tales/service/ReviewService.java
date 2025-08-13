@@ -33,14 +33,12 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse create(ReviewCreateDto d, Authentication auth) {
+        Long userId = resolveUserId(auth);
         Tale tale = tales.findById(d.taleId()).orElseThrow();
-        User user = users.findByUsername(auth.getName()).orElseThrow();
+        User user = users.findById(userId).orElseThrow();
         Review r = Review.builder()
-                .tale(tale)
-                .user(user)
-                .rating(d.rating())
-                .title(d.title())
-                .body(d.body())
+                .tale(tale).user(user)
+                .rating(d.rating()).title(d.title()).body(d.body())
                 .build();
         r = reviews.save(r);
         return ReviewMapper.toResponse(r);
@@ -52,10 +50,12 @@ public class ReviewService {
 
     @Transactional
     public ReviewResponse update(Long id, ReviewUpdateDto d, Authentication auth) {
+        resolveUserId(auth);
         Review r = reviews.findById(id).orElseThrow();
         String username = auth.getName();
         if (!r.getUser().getUsername().equals(username)) {
-            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Forbidden");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Forbidden");
         }
         r.setRating(d.rating());
         r.setTitle(d.title());
@@ -66,16 +66,31 @@ public class ReviewService {
 
     @Transactional
     public void delete(Long id, Authentication auth) {
+        resolveUserId(auth);
         Review r = reviews.findById(id).orElseThrow();
         String username = auth.getName();
         if (!r.getUser().getUsername().equals(username)) {
-            throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Forbidden");
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.FORBIDDEN, "Forbidden");
         }
         reviews.delete(r);
     }
 
     public Optional<ReviewResponse> findMyForTale(Long taleId, Authentication auth) {
-        Long userId = users.findByUsername(auth.getName()).orElseThrow().getId();
+        Long userId = resolveUserId(auth);
         return reviews.findByUserIdAndTaleId(userId, taleId).map(ReviewMapper::toResponse);
+    }
+
+    private Long resolveUserId(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()
+                || auth.getPrincipal() == null
+                || "anonymousUser".equals(auth.getPrincipal())) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.UNAUTHORIZED, "Unauthorized");
+        }
+        return users.findByUsername(auth.getName())
+                .map(com.taufer.tales.domain.User::getId)
+                .orElseThrow(() -> new org.springframework.web.server.ResponseStatusException(
+                        org.springframework.http.HttpStatus.UNAUTHORIZED, "Unauthorized"));
     }
 }
