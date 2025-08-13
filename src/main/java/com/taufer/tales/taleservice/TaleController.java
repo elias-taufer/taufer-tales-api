@@ -7,7 +7,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;
-import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/tales")

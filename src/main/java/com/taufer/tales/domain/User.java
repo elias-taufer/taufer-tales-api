@@ -1,5 +1,7 @@
 package com.taufer.tales.domain;
 
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -24,6 +26,8 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
     @Column(nullable = false)
+    @JsonIgnore
+
     private String password;
 
     @ElementCollection(fetch = FetchType.EAGER)
