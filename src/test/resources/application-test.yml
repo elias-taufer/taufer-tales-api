@@ -1,0 +1,18 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  sql:
+    init:
+      mode: never
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  jwt:
+    secret: t9d/puu41T5Po+M3fBKwAjOES/3e6SuUm0P1dMYMoeA=
+    expiration-ms: 60000
