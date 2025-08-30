@@ -174,24 +174,41 @@ public class TaleService {
     }
 
     private String resolveAuthorNames(OpenLibraryEdition ed) {
-        if (ed.authors == null || ed.authors.isEmpty()) return null;
-        List<String> names = new ArrayList<>();
-        for (var ref : ed.authors) {
-            if (ref != null && ref.key != null) {
-                String name = openLibrary.getAuthorNameByKey(ref.key);
-                if (name != null && !name.isBlank()) names.add(name.trim());
+        // Try edition authors
+        if (ed.authors != null && !ed.authors.isEmpty()) {
+            List<String> names = new ArrayList<>();
+            for (var ref : ed.authors) {
+                if (ref != null && ref.key != null) {
+                    var name = openLibrary.getAuthorNameByKey(ref.key);
+                    if (name != null && !name.isBlank()) names.add(name.trim());
+                }
+            }
+            if (!names.isEmpty())
+                return String.join(", ", names);
+        }
+
+        // Fallback: by_statement
+        if (ed.by_statement != null && !ed.by_statement.isBlank())
+            return ed.by_statement.trim();
+
+        // Fallback: Work authors
+        if (ed.works != null && !ed.works.isEmpty() && ed.works.getFirst() != null && ed.works.getFirst().key != null) {
+            var work = openLibrary.getWorkByKey(ed.works.getFirst().key);
+            if (work != null && work.authors != null && !work.authors.isEmpty()) {
+                List<String> names = new ArrayList<>();
+                for (var wa : work.authors) {
+                    if (wa != null && wa.author != null && wa.author.key != null) {
+                        var name = openLibrary.getAuthorNameByKey(wa.author.key);
+                        if (name != null && !name.isBlank()) names.add(name.trim());
+                    }
+                }
+                if (!names.isEmpty())
+                    return String.join(", ", names);
             }
         }
-        return names.isEmpty() ? null : String.join(", ", names);
-    }
 
-    private static String extractDescription(OpenLibraryEdition ed) {
-        if (ed.description == null) return null;
-        if (ed.description.isTextual()) return safeTrim(ed.description.asText());
-        if (ed.description.has("value") && ed.description.get("value").isTextual()) {
-            return safeTrim(ed.description.get("value").asText());
-        }
-        return null;
+        // Last resort. Avoid NOT NULL violations
+        return "Unknown";
     }
 
     private static Integer extractYear(String publishDate) {
