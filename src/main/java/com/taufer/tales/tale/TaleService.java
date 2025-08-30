@@ -1,16 +1,26 @@
 package com.taufer.tales.tale;
 
 import com.taufer.tales.common.HtmlSanitizer;
+import com.taufer.tales.integrations.openlibrary.OpenLibraryClient;
+import com.taufer.tales.integrations.openlibrary.dto.OpenLibraryEdition;
+import com.taufer.tales.integrations.openlibrary.dto.OpenLibraryWork;
 import com.taufer.tales.tale.dto.PageResponse;
 import com.taufer.tales.review.ReviewRepository;
 import com.taufer.tales.tale.dto.TaleCreateDto;
 import com.taufer.tales.tale.dto.TaleResponse;
 import com.taufer.tales.tale.dto.TaleUpdateDto;
+
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Validator;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +30,8 @@ public class TaleService {
     private final TaleRepository tales;
     private final ReviewRepository reviews;
     private final HtmlSanitizer sanitizer;
+    private final OpenLibraryClient openLibrary;
+    private final Validator validator;
 
     public PageResponse<TaleResponse> list(String q, int page, int size) {
         PageRequest pr = PageRequest.of(page, size);
@@ -59,6 +71,56 @@ public class TaleService {
     }
 
     @Transactional
+    public TaleResponse importByIsbn(String rawIsbn) {
+        String isbn = validateAndNormalizeIsbn(rawIsbn);
+
+        if (tales.findByIsbn(isbn).isPresent()) {
+            throw new DataIntegrityViolationException("ISBN already exists");
+        }
+
+        final OpenLibraryEdition ed;
+        ed = openLibrary.getEditionByIsbn(isbn);
+
+        if (ed == null) {
+            throw new NoSuchElementException("No book found for ISBN " + isbn + " on Open Library.");
+        }
+
+        String title = safeTrim(ed.title);
+        if (title == null || title.isBlank()) {
+            // Treat “missing title” as not found / unusable edition
+            throw new NoSuchElementException("The Open Library record for ISBN " + isbn + " has no title.");
+        }
+
+        String author = resolveAuthorNames(ed);
+        if ((author == null || author.isBlank()) && ed.by_statement != null) {
+            author = safeTrim(ed.by_statement);
+        }
+
+        // String description = extractDescription(ed);
+        String description = pickDescription(ed);
+        Integer publishedYear = extractYear(ed.publish_date);
+        String coverUrl = extractCoverUrl(ed);
+
+        try { sanitizer.clean(title); } catch (Exception ignored) {}
+        try { if (author != null) sanitizer.clean(author); } catch (Exception ignored) {}
+        try { if (description != null) sanitizer.clean(description); } catch (Exception ignored) {}
+        try { if (coverUrl != null) sanitizer.clean(coverUrl); } catch (Exception ignored) {}
+
+        Tale t = Tale.builder()
+                .title(title)
+                .author(author)
+                .isbn(isbn)
+                .description(description)
+                .coverUrl(coverUrl)
+                .publishedYear(publishedYear)
+                .tags(null)
+                .build();
+
+        t = tales.save(t);
+        return TaleMapper.toResponse(t, 0.0d);
+    }
+
+    @Transactional
     public TaleResponse update(Long id, TaleUpdateDto d) {
         Tale t = tales.findById(id).orElseThrow();
 
@@ -83,5 +145,90 @@ public class TaleService {
     @Transactional
     public void delete(Long id) {
         tales.deleteById(id);
+    }
+
+    /* ---------- helpers (private) ---------- */
+
+    private String validateAndNormalizeIsbn(String raw) {
+        // Inner bean solely for validation
+        record IsbnParam(
+                @NotBlank(message = "ISBN is required")
+                @jakarta.validation.constraints.Pattern(
+                        // accepts 10/13 with optional hyphens/spaces; trailing X allowed for ISBN-10
+                        regexp = "^(?:(?:97[89])?\\d{9}[\\dXx]|(?:97[89][- ]?)?(?:\\d[- ]?){9}[\\dXx])$",
+                        message = "ISBN must be 10 or 13 characters; X allowed for ISBN-10"
+                )
+                String isbn
+        ) {}
+
+        var violations = validator.validate(new IsbnParam(raw));
+        if (!violations.isEmpty()) {
+            throw new ConstraintViolationException(violations);
+        }
+
+        return raw.replaceAll("[^0-9Xx]", "").toUpperCase(Locale.ROOT);
+    }
+
+    private static String safeTrim(String s) {
+        return s == null ? null : s.trim();
+    }
+
+    private String resolveAuthorNames(OpenLibraryEdition ed) {
+        if (ed.authors == null || ed.authors.isEmpty()) return null;
+        List<String> names = new ArrayList<>();
+        for (var ref : ed.authors) {
+            if (ref != null && ref.key != null) {
+                String name = openLibrary.getAuthorNameByKey(ref.key);
+                if (name != null && !name.isBlank()) names.add(name.trim());
+            }
+        }
+        return names.isEmpty() ? null : String.join(", ", names);
+    }
+
+    private static String extractDescription(OpenLibraryEdition ed) {
+        if (ed.description == null) return null;
+        if (ed.description.isTextual()) return safeTrim(ed.description.asText());
+        if (ed.description.has("value") && ed.description.get("value").isTextual()) {
+            return safeTrim(ed.description.get("value").asText());
+        }
+        return null;
+    }
+
+    private static Integer extractYear(String publishDate) {
+        if (publishDate == null) return null;
+        var m = java.util.regex.Pattern.compile("(\\d{4})").matcher(publishDate);
+        if (m.find()) {
+            try { return Integer.parseInt(m.group(1)); } catch (NumberFormatException ignored) {}
+        }
+        return null;
+    }
+
+    private static String extractCoverUrl(OpenLibraryEdition ed) {
+        if (ed.covers == null || ed.covers.isEmpty() || ed.covers.getFirst() == null) return null;
+        return "https://covers.openlibrary.org/b/id/" + ed.covers.getFirst() + "-L.jpg";
+    }
+
+    private String pickDescription(OpenLibraryEdition ed) {
+        String fromEdition = jsonNodeToText(ed.description);
+        if (fromEdition != null && !fromEdition.isBlank()) return fromEdition;
+
+        String fromNotes = jsonNodeToText(ed.notes);
+        if (fromNotes != null && !fromNotes.isBlank()) return fromNotes;
+
+        if (ed.works != null && !ed.works.isEmpty() && ed.works.getFirst() != null && ed.works.getFirst().key != null) {
+            OpenLibraryWork work = openLibrary.getWorkByKey(ed.works.getFirst().key);
+            if (work != null) {
+                String fromWork = jsonNodeToText(work.description);
+                if (fromWork != null && !fromWork.isBlank()) return fromWork;
+            }
+        }
+        return null;
+    }
+
+    private static String jsonNodeToText(com.fasterxml.jackson.databind.JsonNode node) {
+        if (node == null) return null;
+        if (node.isTextual()) return node.asText();
+        if (node.has("value") && node.get("value").isTextual()) return node.get("value").asText();
+        return null;
     }
 }

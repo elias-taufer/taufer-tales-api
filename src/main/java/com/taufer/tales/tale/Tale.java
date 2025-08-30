@@ -20,6 +20,7 @@ public class Tale {
     @Column(nullable = false)
     private String author;
 
+    @Column(unique = true)
     private String isbn;
 
     @Column(length = 4000)

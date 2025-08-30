@@ -1,5 +1,6 @@
 package com.taufer.tales.error;
 
+import com.taufer.tales.integrations.exceptions.ExternalServiceException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolation;
@@ -13,7 +14,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -47,16 +47,15 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({NoSuchElementException.class, EntityNotFoundException.class})
     public ResponseEntity<ApiError> handleNotFound(RuntimeException ex, HttpServletRequest req) {
-        ApiError body = ApiError.of(HttpStatus.NOT_FOUND, messageOrDefault(ex, "Resource not found"), req.getRequestURI());
+        ApiError body = ApiError.of(HttpStatus.NOT_FOUND, messageOrDefault(ex), req.getRequestURI());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ApiError> handleConflict(DataIntegrityViolationException ex, HttpServletRequest req) {
-        // Try to present a friendly message for unique-constraint violations
-        String msg = Optional.ofNullable(ex.getMostSpecificCause())
+        String msg = Optional.of(ex.getMostSpecificCause())
                 .map(Throwable::getMessage)
-                .filter(m -> m != null && m.toLowerCase().contains("unique"))
+                .filter(m -> m.toLowerCase().contains("unique"))
                 .map(m -> "Duplicate value violates a unique constraint")
                 .orElse("Data integrity violation");
         ApiError body = ApiError.of(HttpStatus.CONFLICT, msg, req.getRequestURI());
@@ -81,6 +80,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 
+    @ExceptionHandler(ExternalServiceException.class)
+    public ResponseEntity<ApiError> handleExternal(ExternalServiceException ex, HttpServletRequest req) {
+        ApiError body = ApiError.of(HttpStatus.BAD_GATEWAY, ex.getMessage(), req.getRequestURI());
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body);
+    }
+
     private ApiFieldError toFieldError(FieldError fe) {
         return new ApiFieldError(
                 fe.getField(),
@@ -95,7 +100,7 @@ public class GlobalExceptionHandler {
         return new ApiFieldError(field, v.getMessage(), v.getInvalidValue(), v.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName());
     }
 
-    private String messageOrDefault(Throwable t, String fallback) {
-        return (t.getMessage() == null || t.getMessage().isBlank()) ? fallback : t.getMessage();
+    private String messageOrDefault(Throwable t) {
+        return (t.getMessage() == null || t.getMessage().isBlank()) ? "Resource not found" : t.getMessage();
     }
 }

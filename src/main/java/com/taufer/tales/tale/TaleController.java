@@ -8,6 +8,7 @@ import com.taufer.tales.tale.dto.TaleResponse;
 import com.taufer.tales.tale.dto.TaleUpdateDto;
 import com.taufer.tales.bookshelf.BookshelfService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
@@ -39,6 +40,17 @@ public class TaleController {
     @PostMapping
     public TaleResponse create(@RequestBody @Valid TaleCreateDto d) {
         return svc.create(d);
+    }
+
+    @PostMapping("/import")
+    public TaleResponse importByIsbn(
+            @RequestParam
+            @Pattern(
+                    // accepts 10/13, optional hyphens/spaces, trailing X allowed for ISBN-10
+                    regexp = "^(?:(?:97[89])?\\d{9}[\\dXx]|(?:97[89][- ]?)?(?:\\d[- ]?){9}[\\dXx])$",
+                    message = "ISBN must be 10 or 13 characters; X allowed for ISBN-10"
+            ) String isbn) {
+        return svc.importByIsbn(isbn);
     }
 
     @PatchMapping("/{id}")
